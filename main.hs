@@ -41,8 +41,8 @@ getDelta c = case c of
 
 
 
-drawState :: Window -> Position -> IO ()
-drawState scr p =  do
+drawState :: Window -> Styles -> Position -> IO ()
+drawState scr sty p =  do
   erase
   [style] <- convertStyles [(Style CyanF BlackB)]
   setStyle style
@@ -55,14 +55,14 @@ drawState scr p =  do
   refresh
 
 
-makeNetworkDescription :: Frameworks t => AddHandler Char -> Window -> Moment t ()
-makeNetworkDescription keyEvent scr = do
+makeNetworkDescription :: Frameworks t => AddHandler Char -> Window -> Styles -> Moment t ()
+makeNetworkDescription keyEvent scr sty = do
   echar <- fromAddHandler keyEvent -- Event t Char
   let bchar = stepper 'a' echar -- Behaviour t Char
       edelta = getDelta <$> echar -- Event t (Position -> Position)
       bposition = accumB (Position {x = 0, y = 0}) edelta -- Behaviour t Position
-  eposition <- changes bposition -- Event t (Future Position) 
-  reactimate' $ (fmap (drawState scr) <$> eposition)
+  eposition <- changes bposition -- Event t (Future Position)
+  reactimate' $ (fmap (drawState scr sty) <$> eposition)
 
 
 main :: IO ()
@@ -72,12 +72,13 @@ main = do
     initCurses
     erase
     refresh
+    styles <- gameStyle
 
     -- get a handler
     (addKeyEvent, fireKey) <- newAddHandler
 
     -- compile and actuate network
-    network <- compile (makeNetworkDescription addKeyEvent scr)
+    network <- compile (makeNetworkDescription addKeyEvent scr styles)
     actuate network
 
     fireKey 'a'
