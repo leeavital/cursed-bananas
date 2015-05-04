@@ -9,19 +9,22 @@ import UI.HSCurses.Widgets
 import UI.HSCurses.CursesHelper
 
 
-
-actorSize :: Size
-actorSize = (2,2)
-
-actor = OpaqueWidget actorSize
-
-actorStyle = Style BlackF  BlackB
-
-
-
 data Position = Position { x :: Int, y :: Int } deriving Show
 
+data Styles = Styles { actorStyle :: CursesStyle, wallStyle :: CursesStyle }
+
+
+-- a record of all the styles used in the game
+gameStyle :: IO Styles
+gameStyle =
+  let a = Style WhiteF BlackB
+      w = Style WhiteF PurpleB
+  in
+  do [a', w'] <- convertStyles [a, w]
+     return $ Styles { actorStyle = a', wallStyle = w' }
+
 -- this will get more complicated
+getDelta :: Char -> Position -> Position
 getDelta c = case c of
   'h' -> incr (-1, 0)
   'j' -> incr (0, 1)
@@ -37,14 +40,18 @@ getDelta c = case c of
 
 
 
+
 drawState :: Window -> Position -> IO ()
 drawState scr p =  do
   erase
+  [style] <- convertStyles [(Style CyanF BlackB)]
+  setStyle style
   let xpos = x p
       ypos = y p
   move xpos ypos
-  draw (xpos, ypos) actorSize DHNormal actor
-  wAddStr scr ("current " ++ (show $ x  p) ++ "   "  ++ (show $ y p) )
+  wAddStr scr ("  ")
+  move xpos (ypos + 1)
+  wAddStr scr ("  ")
   refresh
 
 
@@ -56,19 +63,24 @@ makeNetworkDescription keyEvent scr = do
       bposition = accumB (Position {x = 0, y = 0}) edelta -- Behaviour t Position
   eposition <- changes bposition -- Event t (Future Position) 
   reactimate' $ (fmap (drawState scr) <$> eposition)
-  -- reactimate $ (\n -> if n then endWin else return () ) <$> equit
 
 
 main :: IO ()
 main = do
+    -- do curses set up
     scr <- initScr
-    [actorStyleC] <- convertStyles [actorStyle] -- not 100% sure why this is necessary
     initCurses
     erase
     refresh
+
+    -- get a handler
     (addKeyEvent, fireKey) <- newAddHandler
+
+    -- compile and actuate network
     network <- compile (makeNetworkDescription addKeyEvent scr)
     actuate network
-    hSetEcho stdin False
-    hSetBuffering stdin NoBuffering
+
+    fireKey 'a'
+
+    -- feed new characters into the key handler forever
     forever (getChar >>= fireKey)
