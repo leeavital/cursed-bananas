@@ -47,17 +47,17 @@ main = do
 
     -- feed new characters into the key handler forever
     -- forever (getChar >>= fireKey)
-    loop fireKey
+    loop fireKey where
+      loop f = do
+        c <- getChar
+        f c
+        if (c == 'q') then
+          endWin
+        else
+          loop f
 
 
-
-loop f = do
-  c <- getChar
-  f c
-  if (c == 'q') then
-    endWin
-  else
-    loop f
+numObstacles = 25
 
 
 initialBoard :: IO Board
@@ -65,8 +65,8 @@ initialBoard = do
     -- get some random obstacles
     g <- newStdGen
     let
-      xs = [ x `mod` 25 | x <- take 10 $ (randoms g :: [Integer])]
-      ys = [ y `mod` 25 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
+      xs = [ x `mod` 24 | x <- take numObstacles $ (randoms g :: [Integer])]
+      ys = [ y `mod` 24 | y <- take numObstacles $ drop numObstacles $ (randoms g :: [Integer])]
       obstacles' = [ Position {x = fromIntegral x', y = fromIntegral y'} | (x', y') <- zip xs ys]
 
       start = Position { x = 0, y = 0 }
@@ -124,7 +124,7 @@ drawState scr sty brd =  do
     os = obstacles brd
   mkBox scr (bgStyle sty) (Position {x = 0, y = 0}) (25, 25) -- draw background
   mkBox scr (actorStyle sty) p (2, 4) -- draw actor
-  mapM_  (\p -> mkBox scr (obstacleStyle sty) p (1,1)) os -- draw obstacles
+  mapM_  (\p -> mkBox scr (obstacleStyle sty) p (1,2)) os -- draw obstacles
   refresh
 
 
