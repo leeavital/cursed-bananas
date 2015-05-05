@@ -17,6 +17,20 @@ data GameStyle = GameStyle { actorStyle :: CursesStyle, wallStyle :: CursesStyle
 
 data Board = Board { player :: Position, obstacles :: [Position] }
 
+
+initialBoard :: IO Board
+initialBoard = do
+    -- get some random obstacles
+    g <- newStdGen
+    let
+      xs = [ x `mod` 300 | x <- take 10 $ (randoms g :: [Integer])]
+      ys = [ y `mod` 300 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
+      obstacles' = [ Position {x = fromIntegral x', y = fromIntegral y'} | (x', y') <- zip xs ys]
+      
+      start = Position { x = 0, y = 0 }
+    return $ Board {player = start, obstacles = obstacles' }
+  
+
 -- a record of all the styles used in the game
 gameStyle :: IO GameStyle
 gameStyle =
@@ -84,17 +98,6 @@ main = do
     erase
     refresh
     styles <- gameStyle
-
-    -- get some random obstacles
-    g <- newStdGen
-    let 
-      xs = [ x `mod` 300 | x <- take 10 $ (randoms g :: [Integer])]
-      ys = [ y `mod` 300 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
-
-    putStrLn $ show (zip xs ys)
-
-    
-
 
 
     let
