@@ -41,7 +41,7 @@ gameStyle =
      return $ GameStyle { actorStyle = a', wallStyle = w' }
 
 -- this will get more complicated
-getDelta :: Char -> Position -> Position
+getDelta :: Char -> Board -> Board
 getDelta c = case c of
   'h' -> incr (-1, 0)
   'j' -> incr (0, 1)
@@ -49,8 +49,11 @@ getDelta c = case c of
   'l' -> incr (1, 0)
   _   ->  incr (0, 0)
   where
-    incr :: (Int, Int) -> Position -> Position
-    incr (dy,dx) = (\p -> Position {x = (x p) + dx, y = (y p) + dy})
+    incr :: (Int, Int) -> Board -> Board 
+    incr (dy,dx) brd =
+      let p = player brd
+          p' = Position {x = (x p) + dx, y = (y p) + dy }
+      in  brd { player = p' }
 
 
 mkBox :: Window -> CursesStyle -> Position -> Size -> IO ()
@@ -71,20 +74,23 @@ mkBox win sty p s =
 
 
 
-drawState :: Window -> GameStyle -> Position -> IO ()
-drawState scr sty p =  do
+drawState :: Window -> GameStyle -> Board -> IO ()
+drawState scr sty brd =  do
   erase
+  let
+    p = player brd
+    os = obstacles brd
   mkBox scr (actorStyle sty) p (2, 4)
   refresh
 
 
 
-makeNetworkDescription :: Frameworks t => AddHandler Char -> (Position -> IO ()) -> Moment t ()
-makeNetworkDescription keyEvent draw = do
+makeNetworkDescription :: Frameworks t => AddHandler Char -> Board -> (Board -> IO ()) -> Moment t ()
+makeNetworkDescription keyEvent start draw = do
   echar <- fromAddHandler keyEvent -- Event t Char
   let bchar = stepper 'a' echar -- Behaviour t Char
-      edelta = getDelta <$> echar -- Event t (Position -> Position)
-      bposition = accumB (Position {x = 0, y = 0}) edelta -- Behaviour t Position
+      edelta = getDelta <$> echar -- Event t (Board -> Board)
+      bposition = accumB start edelta -- Behaviour t Position
   eposition <- changes bposition -- Event t (Future Position)
   reactimate' $ (fmap (draw) <$> eposition)
 
@@ -101,14 +107,17 @@ main = do
 
 
     let
-      draw :: Position -> IO ()
+      draw :: Board -> IO ()
       draw = drawState scr styles
 
     -- get a handler
     (addKeyEvent, fireKey) <- newAddHandler
 
+    -- start stae
+    start <- initialBoard
+
     -- compile and actuate network
-    network <- compile (makeNetworkDescription addKeyEvent draw)
+    network <- compile (makeNetworkDescription addKeyEvent start draw)
     actuate network
 
     fireKey 'a'
