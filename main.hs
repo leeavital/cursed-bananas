@@ -8,11 +8,14 @@ import UI.HSCurses.Curses
 import UI.HSCurses.Widgets
 import UI.HSCurses.CursesHelper
 
+import System.Random
+
 
 data Position = Position { x :: Int, y :: Int } deriving Show
 
 data GameStyle = GameStyle { actorStyle :: CursesStyle, wallStyle :: CursesStyle }
 
+data Board = Board { player :: Position, obstacles :: [Position] }
 
 -- a record of all the styles used in the game
 gameStyle :: IO GameStyle
@@ -36,33 +39,30 @@ getDelta c = case c of
     incr (dy,dx) = (\p -> Position {x = (x p) + dx, y = (y p) + dy})
 
 
-mkBox :: Window -> CursesStyle -> Int -> Int -> IO ()
-mkBox win sty x y  =
-  let row = concat [" " | _ <- [1..x]]
+mkBox :: Window -> CursesStyle -> Position -> Size -> IO ()
+mkBox win sty p s =
+  let w = getWidth s
+      h = getHeight s
+      row = concat [" " | _ <- [1..w]]
       write 0 = return ()
       write y = do
         wAddStr win row
         (ypos, xpos) <- getYX win
-        move  (ypos + 1) (xpos - x)
+        move  (ypos + 1) (xpos - w)
         write (y - 1)
   in do
+    move (x p) (y p) 
     setStyle sty
-    write y
+    write h
 
 
 
 drawState :: Window -> GameStyle -> Position -> IO ()
 drawState scr sty p =  do
   erase
-  -- setStyle (actorStyle  sty)
-  let xpos = x p
-      ypos = y p
-  move xpos ypos
-  mkBox scr (actorStyle sty) 4 2
-  -- wAddStr scr ("  ")
-  -- move xpos (ypos + 1)
-  -- wAddStr scr ("  ")
+  mkBox scr (actorStyle sty) p (2, 4)
   refresh
+
 
 
 makeNetworkDescription :: Frameworks t => AddHandler Char -> (Position -> IO ()) -> Moment t ()
@@ -80,9 +80,22 @@ main = do
     -- do curses set up
     scr <- initScr
     initCurses
+    resizeTerminal 300 300
     erase
     refresh
     styles <- gameStyle
+
+    -- get some random obstacles
+    g <- newStdGen
+    let 
+      xs = [ x `mod` 300 | x <- take 10 $ (randoms g :: [Integer])]
+      ys = [ y `mod` 300 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
+
+    putStrLn $ show (zip xs ys)
+
+    
+
+
 
     let
       draw :: Position -> IO ()
