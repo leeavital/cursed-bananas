@@ -15,8 +15,39 @@ data Board = Board { player :: Position, obstacles :: [Position] }
 
 data Position = Position { x :: Int, y :: Int } deriving Show
 
-data GameStyle = GameStyle { actorStyle :: CursesStyle, obstacleStyle :: CursesStyle }
+data GameStyle = GameStyle {    actorStyle :: CursesStyle,
+                                obstacleStyle :: CursesStyle,
+                                bgStyle :: CursesStyle }
 
+main :: IO ()
+main = do
+    -- do curses set up
+    scr <- initScr
+    initCurses
+    resizeTerminal 300 300
+    erase
+    refresh
+    styles <- gameStyle
+
+
+    let
+      draw :: Board -> IO ()
+      draw = drawState scr styles
+
+    -- get a handler
+    (addKeyEvent, fireKey) <- newAddHandler
+
+    -- start stae
+    start <- initialBoard
+
+    -- compile and actuate network
+    network <- compile (makeNetworkDescription addKeyEvent start draw)
+    actuate network
+
+    fireKey 'a'
+
+    -- feed new characters into the key handler forever
+    forever (getChar >>= fireKey)
 
 
 initialBoard :: IO Board
@@ -37,9 +68,10 @@ gameStyle :: IO GameStyle
 gameStyle =
   let a = Style WhiteF BlackB
       o = Style WhiteF DarkGreenB
+      b = Style WhiteF WhiteB
   in
-  do [a', o'] <- convertStyles [a, o]
-     return $ GameStyle { actorStyle = a', obstacleStyle = o' }
+  do [a', o', b'] <- convertStyles [a, o, b]
+     return $ GameStyle { actorStyle = a', obstacleStyle = o', bgStyle = b'}
 
 -- this will get more complicated
 getDelta :: Char -> Board -> Board
@@ -74,17 +106,16 @@ mkBox win sty p s =
     write h
 
 
-
 drawState :: Window -> GameStyle -> Board -> IO ()
 drawState scr sty brd =  do
   erase
   let
     p = player brd
     os = obstacles brd
-  mkBox scr (actorStyle sty) p (2, 4)
-  mapM_  (\p -> mkBox scr (obstacleStyle sty) p (1,1)) os
+  mkBox scr (bgStyle sty) (Position {x = 0, y = 0}) (25, 25) -- draw background
+  mkBox scr (actorStyle sty) p (2, 4) -- draw actor
+  mapM_  (\p -> mkBox scr (obstacleStyle sty) p (1,1)) os -- draw obstacles
   refresh
-
 
 
 makeNetworkDescription :: Frameworks t => AddHandler Char -> Board -> (Board -> IO ()) -> Moment t ()
@@ -97,32 +128,3 @@ makeNetworkDescription keyEvent start draw = do
   reactimate' $ (fmap (draw) <$> eposition)
 
 
-main :: IO ()
-main = do
-    -- do curses set up
-    scr <- initScr
-    initCurses
-    resizeTerminal 300 300
-    erase
-    refresh
-    styles <- gameStyle
-
-
-    let
-      draw :: Board -> IO ()
-      draw = drawState scr styles
-
-    -- get a handler
-    (addKeyEvent, fireKey) <- newAddHandler
-
-    -- start stae
-    start <- initialBoard
-
-    -- compile and actuate network
-    network <- compile (makeNetworkDescription addKeyEvent start draw)
-    actuate network
-
-    fireKey 'a'
-
-    -- feed new characters into the key handler forever
-    forever (getChar >>= fireKey)
