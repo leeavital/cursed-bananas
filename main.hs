@@ -11,11 +11,12 @@ import UI.HSCurses.CursesHelper
 import System.Random
 
 
+data Board = Board { player :: Position, obstacles :: [Position] }
+
 data Position = Position { x :: Int, y :: Int } deriving Show
 
-data GameStyle = GameStyle { actorStyle :: CursesStyle, wallStyle :: CursesStyle }
+data GameStyle = GameStyle { actorStyle :: CursesStyle, obstacleStyle :: CursesStyle }
 
-data Board = Board { player :: Position, obstacles :: [Position] }
 
 
 initialBoard :: IO Board
@@ -23,22 +24,22 @@ initialBoard = do
     -- get some random obstacles
     g <- newStdGen
     let
-      xs = [ x `mod` 300 | x <- take 10 $ (randoms g :: [Integer])]
-      ys = [ y `mod` 300 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
+      xs = [ x `mod` 25 | x <- take 10 $ (randoms g :: [Integer])]
+      ys = [ y `mod` 25 | y <- take 10 $ drop 10 $ (randoms g :: [Integer])]
       obstacles' = [ Position {x = fromIntegral x', y = fromIntegral y'} | (x', y') <- zip xs ys]
-      
+
       start = Position { x = 0, y = 0 }
     return $ Board {player = start, obstacles = obstacles' }
-  
+
 
 -- a record of all the styles used in the game
 gameStyle :: IO GameStyle
 gameStyle =
   let a = Style WhiteF BlackB
-      w = Style WhiteF PurpleB
+      o = Style WhiteF DarkGreenB
   in
-  do [a', w'] <- convertStyles [a, w]
-     return $ GameStyle { actorStyle = a', wallStyle = w' }
+  do [a', o'] <- convertStyles [a, o]
+     return $ GameStyle { actorStyle = a', obstacleStyle = o' }
 
 -- this will get more complicated
 getDelta :: Char -> Board -> Board
@@ -81,6 +82,7 @@ drawState scr sty brd =  do
     p = player brd
     os = obstacles brd
   mkBox scr (actorStyle sty) p (2, 4)
+  mapM_  (\p -> mkBox scr (obstacleStyle sty) p (1,1)) os
   refresh
 
 
