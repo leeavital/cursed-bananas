@@ -82,8 +82,8 @@ initialBoard = do
 
 
 bound :: Size -> (Int -> Int, Int -> Int)
-bound s = let boundW = (min (25 - (getHeight s))) . (max 0)
-              boundH = (min $ 25 - (getWidth s)) . (max 0)
+bound s = let boundW = (min (25 - (getWidth s))) . (max 0)
+              boundH = (min $ 25 - (getHeight s)) . (max 0)
           in (boundW, boundH)
 
 
@@ -107,7 +107,7 @@ getDelta c = case c of
   _   ->  incr (0, 0)
   where
     incr :: (Int, Int) -> Board -> Board
-    incr (dy,dx) brd =
+    incr (dx,dy) brd =
       let p = player brd
           p' = Position {x = boundW ((x p) + dx), y = boundH ((y p) + dy) }
       in  brd { player = p' }
@@ -128,7 +128,7 @@ mkBox win sty p s =
         move  (ypos + 1) (xpos - w)
         write (y - 1)
   in do
-    move (x p) (y p)
+    move  (y p) (x p)
     setStyle sty
     write h
 
