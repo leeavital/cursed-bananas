@@ -59,14 +59,13 @@ main = do
 
 
 -- constants
-sizePlayer :: Size
 sizePlayer = (2, 4)
 
-sizeObstacle :: Size
 sizeObstacle = (1,2)
 
-numObstacles :: Int
 numObstacles = 25
+
+origin = Position {x = 0, y = 0 }
 
 
 initialBoard :: IO Board
@@ -114,7 +113,7 @@ getDelta c = case c of
       in  brd { player = p' }
 
     (boundW, boundH) = bound sizePlayer
-    
+
 
 
 mkBox :: Window -> CursesStyle -> Position -> Size -> IO ()
@@ -140,7 +139,7 @@ drawState scr sty brd =  do
   let
     p = player brd
     os = obstacles brd
-  mkBox scr (bgStyle sty) (Position {x = 0, y = 0}) (25, 25) -- draw background
+  mkBox scr (bgStyle sty) origin (25, 25) -- draw background
   mkBox scr (actorStyle sty) p sizePlayer -- draw actor
   mapM_  (\p -> mkBox scr (obstacleStyle sty) p sizeObstacle) os -- draw obstacles
   refresh
