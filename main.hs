@@ -82,8 +82,8 @@ initialBoard = do
 
 
 bound :: Size -> (Int -> Int, Int -> Int)
-bound s = let boundW = (min $ 24 - (getWidth s)) . (max 0)
-              boundH = (min $ 25 - (getHeight s) + 1) . (max 0)
+bound s = let boundW = (min (25 - (getHeight s))) . (max 0)
+              boundH = (min $ 25 - (getWidth s)) . (max 0)
           in (boundW, boundH)
 
 
@@ -109,7 +109,7 @@ getDelta c = case c of
     incr :: (Int, Int) -> Board -> Board
     incr (dy,dx) brd =
       let p = player brd
-          p' = Position {x = boundW $ (x p) + dx, y = boundH $ (y p) + dy }
+          p' = Position {x = boundW ((x p) + dx), y = boundH ((y p) + dy) }
       in  brd { player = p' }
 
     (boundW, boundH) = bound sizePlayer
@@ -147,9 +147,9 @@ drawState scr sty brd =  do
 
 makeNetworkDescription :: Frameworks t => AddHandler Char -> Board -> (Board -> IO ()) -> Moment t ()
 makeNetworkDescription keyEvent start draw = do
-  echar <- fromAddHandler keyEvent -- Event t Char
-  let bchar = stepper 'a' echar -- Behaviour t Char
-      edelta = getDelta <$> echar -- Event t (Board -> Board)
+  echar <- fromAddHandler keyEvent  -- Event t Char
+  let bchar = stepper 'a' echar     -- Behaviour t Char
+      edelta = getDelta <$> echar   -- Event t (Board -> Board)
       bposition = accumB start edelta -- Behaviour t Position
-  eposition <- changes bposition -- Event t (Future Position)
+  eposition <- changes bposition    -- Event t (Future Position)
   reactimate' $ (fmap (draw) <$> eposition)
