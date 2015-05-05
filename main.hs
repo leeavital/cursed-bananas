@@ -82,6 +82,12 @@ initialBoard = do
     return $ Board {player = start, obstacles = obstacles' }
 
 
+bound :: Size -> (Int -> Int, Int -> Int)
+bound s = let boundW = (min $ 24 - (getWidth s)) . (max 0)
+              boundH = (min $ 25 - (getHeight s) + 1) . (max 0)
+          in (boundW, boundH)
+
+
 -- a record of all the styles used in the game
 gameStyle :: IO GameStyle
 gameStyle =
@@ -101,11 +107,14 @@ getDelta c = case c of
   'l' -> incr (1, 0)
   _   ->  incr (0, 0)
   where
-    incr :: (Int, Int) -> Board -> Board 
+    incr :: (Int, Int) -> Board -> Board
     incr (dy,dx) brd =
       let p = player brd
-          p' = Position {x = (x p) + dx, y = (y p) + dy }
+          p' = Position {x = boundW $ (x p) + dx, y = boundH $ (y p) + dy }
       in  brd { player = p' }
+
+    (boundW, boundH) = bound sizePlayer
+    
 
 
 mkBox :: Window -> CursesStyle -> Position -> Size -> IO ()
@@ -120,7 +129,7 @@ mkBox win sty p s =
         move  (ypos + 1) (xpos - w)
         write (y - 1)
   in do
-    move (x p) (y p) 
+    move (x p) (y p)
     setStyle sty
     write h
 
@@ -145,5 +154,3 @@ makeNetworkDescription keyEvent start draw = do
       bposition = accumB start edelta -- Behaviour t Position
   eposition <- changes bposition -- Event t (Future Position)
   reactimate' $ (fmap (draw) <$> eposition)
-
-
