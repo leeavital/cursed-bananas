@@ -24,7 +24,6 @@ main = do
     -- do curses set up
     scr <- initScr
     initCurses
-    resizeTerminal 300 300
     erase
     refresh
     styles <- gameStyle
@@ -47,7 +46,18 @@ main = do
     fireKey 'a'
 
     -- feed new characters into the key handler forever
-    forever (getChar >>= fireKey)
+    -- forever (getChar >>= fireKey)
+    loop fireKey
+
+
+
+loop f = do
+  c <- getChar
+  f c
+  if (c == 'q') then
+    endWin
+  else
+    loop f
 
 
 initialBoard :: IO Board
