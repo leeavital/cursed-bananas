@@ -17,7 +17,8 @@ data Position = Position { x :: Int, y :: Int } deriving Show
 
 data GameStyle = GameStyle {    actorStyle :: CursesStyle,
                                 obstacleStyle :: CursesStyle,
-                                bgStyle :: CursesStyle }
+                                bgStyle :: CursesStyle,
+                                text :: CursesStyle }
 
 main :: IO ()
 main = do
@@ -56,8 +57,6 @@ main = do
         else
           loop f
 
-
-
 -- constants
 sizePlayer = (2, 4)
 
@@ -66,6 +65,29 @@ sizeObstacle = (1,2)
 numObstacles = 25
 
 origin = Position {x = 0, y = 0 }
+
+
+collision :: (Position, Size) -> (Position, Size) -> Bool
+collision (p1, s1) (p2, s2) =
+  let
+    x1 = x p1
+    x2 = x p2
+    y1 = y p1
+    y2 = y p2
+    w1 = getWidth s1
+    w2 = getWidth s2
+    h1 = getHeight s1
+    h2 = getHeight s2
+  in (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
+
+
+-- if (rect1.x < rect2.x + rect2.width &&
+--    rect1.x + rect1.width > rect2.x &&
+--    rect1.y < rect2.y + rect2.height &&
+--    rect1.height + rect1.y > rect2.y) {
+--     // collision detected!
+-- }
+
 
 
 initialBoard :: IO Board
@@ -93,9 +115,10 @@ gameStyle =
   let a = Style WhiteF BlackB
       o = Style WhiteF DarkGreenB
       b = Style WhiteF WhiteB
+      t = Style WhiteF BlackB
   in
-  do [a', o', b'] <- convertStyles [a, o, b]
-     return $ GameStyle { actorStyle = a', obstacleStyle = o', bgStyle = b'}
+  do [a', o', b', t'] <- convertStyles [a, o, b, t]
+     return $ GameStyle { actorStyle = a', obstacleStyle = o', bgStyle = b', text = t' }
 
 -- this will get more complicated
 getDelta :: Char -> Board -> Board
@@ -110,7 +133,11 @@ getDelta c = case c of
     incr (dx,dy) brd =
       let p = player brd
           p' = Position {x = boundW ((x p) + dx), y = boundH ((y p) + dy) }
-      in  brd { player = p' }
+
+          collisions = foldl (\a o -> a ||  (collision (p', sizePlayer) (o, sizeObstacle))) False (obstacles brd)
+
+          p'' = if collisions then p else p'
+      in  brd { player = p'' }
 
     (boundW, boundH) = bound sizePlayer
 
@@ -142,6 +169,10 @@ drawState scr sty brd =  do
   mkBox scr (bgStyle sty) origin (25, 25) -- draw background
   mkBox scr (actorStyle sty) p sizePlayer -- draw actor
   mapM_  (\p -> mkBox scr (obstacleStyle sty) p sizeObstacle) os -- draw obstacles
+  -- draw some text
+  setStyle (text sty)
+  move 25 0
+  wAddStr scr "use hjkl to move. press q to quit"
   refresh
 
 
@@ -153,3 +184,7 @@ makeNetworkDescription keyEvent start draw = do
       bposition = accumB start edelta -- Behaviour t Position
   eposition <- changes bposition    -- Event t (Future Position)
   reactimate' $ (fmap (draw) <$> eposition)
+
+
+
+c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))
