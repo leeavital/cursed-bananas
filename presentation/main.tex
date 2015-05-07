@@ -76,6 +76,17 @@
     \item Reactive Banana + HSCurses = Cursed Banana
   \end{itemize}
 
+  \small
+  \begin{Verbatim}
+makeNetworkDescription keyEvent start draw = do
+  echar <- fromAddHandler keyEvent  -- Event t Char
+  let bchar = stepper 'a' echar -- Behaviour t Char
+      edelta = getDelta <$> echar -- Event t (Board -> Board)
+      bposition = accumB start edelta -- Behaviour t Board
+  eposition <- changes bposition -- Event t (Future Board)
+  reactimate' $ (fmap (draw) <$> eposition)
+
+  \end{Verbatim}
 \end{frame}
 
 

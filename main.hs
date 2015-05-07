@@ -31,7 +31,7 @@ main = do
 
 
     let
-      draw :: Board -> IO ()
+      draw :: (Board, Bool) -> IO ()
       draw = drawState scr styles
 
     -- get a handler
@@ -78,8 +78,14 @@ collision (p1, s1) (p2, s2) =
     w2 = getWidth s2
     h1 = getHeight s1
     h2 = getHeight s2
-  in (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
+  in False -- (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
 
+victory :: Board -> Bool
+victory b =
+  let xpos = (x . player) (b)
+      ypos = (y . player) (b)
+  in xpos == 21 && ypos == 23
+  
 
 -- concise collision detection, courtesy of MDN
 -- if (rect1.x < rect2.x + rect2.width &&
@@ -161,8 +167,8 @@ mkBox win sty p s =
     write h
 
 
-drawState :: Window -> GameStyle -> Board -> IO ()
-drawState scr sty brd =  do
+drawState :: Window -> GameStyle -> (Board, Bool) -> IO ()
+drawState scr sty (brd, vic) =  do
   erase
   let
     p = player brd
@@ -174,17 +180,24 @@ drawState scr sty brd =  do
   setStyle (text sty)
   move 25 0
   wAddStr scr "use hjkl to move. press q to quit"
+  if vic then drawVictory else (return ())
   refresh
+  where 
+    drawVictory = do
+      move 12 8
+      wAddStr scr "YOU WIN!!!!"
 
 
-makeNetworkDescription :: Frameworks t => AddHandler Char -> Board -> (Board -> IO ()) -> Moment t ()
+makeNetworkDescription :: Frameworks t => AddHandler Char -> Board -> ((Board, Bool) -> IO ()) -> Moment t ()
 makeNetworkDescription keyEvent start draw = do
   echar <- fromAddHandler keyEvent  -- Event t Char
   let bchar = stepper 'a' echar     -- Behaviour t Char
       edelta = getDelta <$> echar   -- Event t (Board -> Board)
-      bposition = accumB start edelta -- Behaviour t Position
-  eposition <- changes bposition    -- Event t (Future Position)
-  reactimate' $ (fmap (draw) <$> eposition)
+      bboard = accumB start edelta -- Behavior t Board 
+      bvictory = victory <$> bboard -- Behavior t Bool
+      bbrdvictory = (\x y-> (y, x))<$> bvictory <*> bboard
+  eboard <- changes bbrdvictory -- Event t (Future Board)
+  reactimate' $ ( (fmap draw) <$> eboard)
 
 
 c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))
