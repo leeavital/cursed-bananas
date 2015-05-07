@@ -81,6 +81,7 @@ collision (p1, s1) (p2, s2) =
   in (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
 
 
+-- concise collision detection, courtesy of MDN
 -- if (rect1.x < rect2.x + rect2.width &&
 --    rect1.x + rect1.width > rect2.x &&
 --    rect1.y < rect2.y + rect2.height &&
@@ -184,7 +185,6 @@ makeNetworkDescription keyEvent start draw = do
       bposition = accumB start edelta -- Behaviour t Position
   eposition <- changes bposition    -- Event t (Future Position)
   reactimate' $ (fmap (draw) <$> eposition)
-
 
 
 c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))

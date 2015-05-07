@@ -1,0 +1,82 @@
+\documentclass{beamer}
+
+\usepackage{fancyvrb}
+
+
+\title{Functional Reactive Programming in Haskell}
+\author{Lee Avital}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{frame}
+  \frametitle{Functional Reactive Programming (FRP)}
+
+  \begin{itemize}
+    \item State is a function of time.
+    \item State is a function of outside input (key presses, mouse click)
+    \item Discrete vs Continuous
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Key Abstraction: Event}
+
+    % \begin{semiverbatim}
+    % data Direction = Up | Down
+    % getDir = (Just Down)
+    % getDir  = (Just Up)
+    % \begin{semiverbatim}
+
+  \begin{itemize}
+    \item A "stream" of values.
+    \item Functor
+    \item Monoid (mappend, mempty)
+    \item Applicative
+    \item \texttt{ type E a = [T, a] }
+  \end{itemize}
+
+  \begin{Verbatim}
+    data Direction = Up | Down
+    getDir 'j' = (Just Down)
+    getDir 'k' = (Just Up)
+    echar :: Event t Char
+    getDir <$> echar :: Event t Direction
+  \end{Verbatim}
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+  \frametitle{Key Abstraction: Behavior}
+
+  \begin{itemize}
+    \item A continuous function from time to a value.
+    \item \texttt{type Behaviour a = T $\rightarrow$  a}
+  \end{itemize}
+  \begin{Verbatim}
+    eNum :: Event Int
+    (\x -> (+x)) <$> eNum :: Event (Int -> Int)
+    accumB 0 eNum :: Behaviour Int -- running sum
+    stepper 0  eNum :: Event Int -- last integer
+  \end{Verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{What I did}
+
+  \begin{itemize}
+    \item Reactive Banana --- FRP implementation
+    \item HSCurses --- ncurses binding
+    \item Reactive Banana + HSCurses = Cursed Banana
+  \end{itemize}
+
+\end{frame}
+
+
+\end{document}
