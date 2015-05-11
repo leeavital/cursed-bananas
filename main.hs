@@ -101,16 +101,18 @@ initialBoard = do
     -- get some random obstacles
     g <- newStdGen
     let
-      obstacles = [Position {x = x' `mod` 24, y = y' `mod` 24} | (x', y') <- singleZip (randoms g)]
 
+      notOriginOrWin o = let
+        originC = collision (o, sizeObstacle) (origin, sizePlayer)
+        winC = collision (o, sizeObstacle) (winPosition, sizePlayer)
+        in not (originC && winC)
+
+      obstacles = [Position {x = x' `mod` 24, y = y' `mod` 24} | (x', y') <- singleZip (randoms g)]
       obstacles' = filter notOriginOrWin obstacles
       obstacles'' = take numObstacles obstacles'
 
-    return $ Board {player = start, obstacles = obstacles''}
-    where
-      notOriginOrWin o = let originC = collision (o, sizeObstacle) (origin, sizePlayer)
-                             winC = collision (o, sizeObstacle) (winPosition, sizePlayer)
-                          in not (originC && winC)
+
+    return $ Board {player = origin, obstacles = obstacles''}
 
 
 -- create functions to bind a box of given size within the 25x25 board
