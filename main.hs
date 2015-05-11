@@ -63,23 +63,30 @@ sizePlayer = (2, 4)
 
 sizeObstacle = (1,2)
 
-numObstacles = 25
+-- numObstacles = 25
+numObstacles = 1
 
 origin = Position {x = 0, y = 0 }
-
 
 collision :: (Position, Size) -> (Position, Size) -> Bool
 collision (p1, s1) (p2, s2) =
   let
     x1 = x p1
-    x2 = x p2
-    y1 = y p1
-    y2 = y p2
     w1 = getWidth s1
-    w2 = getWidth s2
+    y1 = y p1
     h1 = getHeight s1
+
+    x2 = x p2
+    w2 = getWidth s2
+    y2 = y p2
     h2 = getHeight s2
-  in False -- (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
+    rightC = x1 >= x2 && x1 < (x2 + w2)
+    leftC = (x1 + w1) > x2 && (x1 + w1) <= (x2 + w2)
+    topC = y1 >= y2 && (y1 < (y2 + h2))
+    bottomC = (y1 + h1) > y2 && (y1 + h1) <= (y2 + h2)
+    xInside = x1 < x2 && (x1 + w1) > (x2 + w2)
+    yInside = y1 < y2 && (y1 + h1) > (y2 + h2)
+  in (rightC || leftC || xInside) && (topC || bottomC || yInside)
 
 -- detect victory condition
 victory :: Board -> Bool
