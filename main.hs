@@ -13,7 +13,7 @@ import System.Random
 
 data Board = Board { player :: Position, obstacles :: [Position] }
 
-data Position = Position { x :: Int, y :: Int } deriving Show
+data Position = Position { x :: Int, y :: Int } deriving Eq
 
 data GameStyle = GameStyle {    actorStyle :: CursesStyle,
                                 obstacleStyle :: CursesStyle,
@@ -63,10 +63,10 @@ sizePlayer = (2, 4)
 
 sizeObstacle = (1,2)
 
--- numObstacles = 25
-numObstacles = 1
+numObstacles = 25
 
 origin = Position {x = 0, y = 0 }
+winPosition = Position {x = 21, y = 23}
 
 collision :: (Position, Size) -> (Position, Size) -> Bool
 collision (p1, s1) (p2, s2) =
@@ -90,19 +90,8 @@ collision (p1, s1) (p2, s2) =
 
 -- detect victory condition
 victory :: Board -> Bool
-victory b =
-  let xpos = (x . player) (b)
-      ypos = (y . player) (b)
-  in xpos == 21 && ypos == 23
-
-
--- concise collision detection, courtesy of MDN
--- if (rect1.x < rect2.x + rect2.width &&
---    rect1.x + rect1.width > rect2.x &&
---    rect1.y < rect2.y + rect2.height &&
---    rect1.height + rect1.y > rect2.y) {
---     // collision detected!
--- }
+victory b = player b == winPosition
+  
 
 
 
@@ -112,12 +101,16 @@ initialBoard = do
     -- get some random obstacles
     g <- newStdGen
     let
-      xs = [ x `mod` 24 | x <- take numObstacles $ (randoms g :: [Integer])]
-      ys = [ y `mod` 24 | y <- take numObstacles $ drop numObstacles $ (randoms g :: [Integer])]
-      obstacles' = [ Position {x = fromIntegral x', y = fromIntegral y'} | (x', y') <- zip xs ys]
+      obstacles = [Position {x = x' `mod` 24, y = y' `mod` 24} | (x', y') <- singleZip (randoms g)]
 
-      start = Position { x = 0, y = 0 }
-    return $ Board {player = start, obstacles = obstacles' }
+      obstacles' = filter notOriginOrWin obstacles
+      obstacles'' = take numObstacles obstacles'
+
+    return $ Board {player = start, obstacles = obstacles''}
+    where
+      notOriginOrWin o = let originC = collision (o, sizeObstacle) (origin, sizePlayer)
+                             winC = collision (o, sizeObstacle) (winPosition, sizePlayer)
+                          in not (originC && winC)
 
 
 -- create functions to bind a box of given size within the 25x25 board
@@ -212,3 +205,6 @@ makeNetworkDescription keyEvent start draw = do
 
 
 -- c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))
+
+
+singleZip (x:y:xs) = ((x,y)):(singleZip xs)
