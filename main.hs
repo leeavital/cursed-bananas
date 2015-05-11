@@ -63,7 +63,7 @@ sizePlayer = (2, 4)
 
 sizeObstacle = (1,2)
 
-numObstacles = 25
+numObstacles = 20
 
 origin = Position {x = 0, y = 0 }
 winPosition = Position {x = 21, y = 23}
