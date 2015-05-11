@@ -22,7 +22,7 @@ data GameStyle = GameStyle {    actorStyle :: CursesStyle,
 
 main :: IO ()
 main = do
-    -- do curses set up
+    -- set up curses
     scr <- initScr
     initCurses
     erase
@@ -30,6 +30,7 @@ main = do
     styles <- gameStyle
 
 
+    -- capture some parameters in the draw function
     let
       draw :: (Board, Bool) -> IO ()
       draw = drawState scr styles
@@ -80,12 +81,13 @@ collision (p1, s1) (p2, s2) =
     h2 = getHeight s2
   in False -- (x1 < x2 + w2) && (x1 + w1 > x2) && (y1 < y1 + h2) && (h1 + y1 > y2)
 
+-- detect victory condition
 victory :: Board -> Bool
 victory b =
   let xpos = (x . player) (b)
       ypos = (y . player) (b)
   in xpos == 21 && ypos == 23
-  
+
 
 -- concise collision detection, courtesy of MDN
 -- if (rect1.x < rect2.x + rect2.width &&
@@ -97,6 +99,7 @@ victory b =
 
 
 
+-- randomly generate a new board
 initialBoard :: IO Board
 initialBoard = do
     -- get some random obstacles
@@ -110,6 +113,7 @@ initialBoard = do
     return $ Board {player = start, obstacles = obstacles' }
 
 
+-- create functions to bind a box of given size within the 25x25 board
 bound :: Size -> (Int -> Int, Int -> Int)
 bound s = let boundW = (min (25 - (getWidth s))) . (max 0)
               boundH = (min $ 25 - (getHeight s)) . (max 0)
@@ -127,7 +131,8 @@ gameStyle =
   do [a', o', b', t'] <- convertStyles [a, o, b, t]
      return $ GameStyle { actorStyle = a', obstacleStyle = o', bgStyle = b', text = t' }
 
--- this will get more complicated
+
+-- get the board delta for a given input character
 getDelta :: Char -> Board -> Board
 getDelta c = case c of
   'h' -> incr (-1, 0)
@@ -147,7 +152,6 @@ getDelta c = case c of
       in  brd { player = p'' }
 
     (boundW, boundH) = bound sizePlayer
-
 
 
 mkBox :: Window -> CursesStyle -> Position -> Size -> IO ()
@@ -195,9 +199,9 @@ makeNetworkDescription keyEvent start draw = do
       edelta = getDelta <$> echar   -- Event t (Board -> Board)
       bboard = accumB start edelta -- Behavior t Board 
       bvictory = victory <$> bboard -- Behavior t Bool
-      bbrdvictory = (\x y-> (y, x))<$> bvictory <*> bboard
-  eboard <- changes bbrdvictory -- Event t (Future Board)
+      bbrdvictory = (\x y-> (y, x))<$> bvictory <*> bboard -- Behaviour t (Board, Bool)
+  eboard <- changes bbrdvictory       -- Event t (Future Board, Bool)
   reactimate' $ ( (fmap draw) <$> eboard)
 
 
-c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))
+-- c = collision (Position {x = 1, y = 3}, (2,4)) (Position {x = 4, y = 2}, (1,2))
