@@ -182,7 +182,7 @@ drawState scr sty (brd, vic) =  do
   wAddStr scr "use hjkl to move. press q to quit"
   if vic then drawVictory else (return ())
   refresh
-  where 
+  where
     drawVictory = do
       move 12 8
       wAddStr scr "YOU WIN!!!!"
